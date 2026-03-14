@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { supabase } from '../lib/supabase';
@@ -8,25 +8,18 @@ import { Colors } from '../constants/theme';
 
 export default function RootLayout() {
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
     registerForPushNotificationsAsync();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/auth/login');
-      }
+      setSession(session);
       setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/auth/login');
-      }
+      setSession(session);
     });
 
     return () => listener.subscription.unsubscribe();
@@ -47,6 +40,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+      {session ? <Redirect href="/(tabs)" /> : <Redirect href="/auth/login" />}
     </>
   );
 }
